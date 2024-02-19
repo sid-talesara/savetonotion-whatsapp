@@ -1,6 +1,9 @@
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 
+const { Client: NotionClient } = require('@notionhq/client');
+const notion = new NotionClient({ auth: "secret_QUV1ux9p59RFOI3MO7jDPF2Wh8EE3DlmjB9t3D2p936" });
+
 
 const qrcode = require('qrcode-terminal');
 
@@ -36,21 +39,150 @@ client.on('ready', () => {
 });
 
 client.on('message_create', async (message) => {
-    const msgBody = message.body.trim();
-    console.log(msgBody)
+    const msgBody = message.body.trim().toLowerCase;
+    const tagRegex = /#\w+/g;
+    const tags = msgBody.match(tagRegex) || [];
 
-    if (msgBody.startsWith("/link")) {
-        console.log("link");
-        await message.reply('Link saved');
-    }
     if (msgBody.startsWith("/savetonotion")) {
-        const stn = msgBody.slice(14).trim();
-        await message.reply(stn);
+        let messageWithoutCommandAndTags = msgBody.slice(14).trim();
+
+        tags.forEach(tag => {
+            messageWithoutCommandAndTags = messageWithoutCommandAndTags.replace(tag, '').trim(); // Remove each tag
+        });
+        const formattedTags = tags.map(tag => ({ name: tag.replace('#', '') }));
+        console.log("Tags:", tags);
+        console.log("Message:", messageWithoutCommandAndTags);
+
+        const title = messageWithoutCommandAndTags;
+        const description = ""
+
+        // sending notion request   
+        const response = await notion.pages.create({
+
+            "icon": {
+                "type": "emoji",
+                "emoji": "📖"
+            },
+            "parent": {
+                "type": "database_id",
+                "database_id": "63536f729a554d1d85bae187a414a138"
+            },
+            "properties": {
+                "Name": {
+                    "title": [
+                        {
+                            "text": {
+                                "content": title
+                            }
+                        }
+                    ]
+                },
+                "Description": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": description
+                            }
+                        }
+                    ]
+                },
+                "Tags": {
+                    "multi_select": formattedTags
+                }
+            },
+
+
+        });
+
+        await message.reply(`✅ Your message is now on Notion! Check it out here: ${response.url}`);
+        console.log(response)
     }
-    // Check if the message starts with "/thought"
-    else if (msgBody.startsWith("/thought")) {
-        console.log("thought");
-        await message.reply('Thought saved');
+    if (msgBody.startsWith("/link")) {
+        let messageWithoutCommandAndTags = msgBody.slice(5).trim(); // Adjusted slice index for "/link"
+        // Assuming URLs are at the end or by regex extraction
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const urls = messageWithoutCommandAndTags.match(urlRegex) || [];
+        const firstUrl = urls.length > 0 ? urls[0] : "";
+
+        if (firstUrl) {
+            messageWithoutCommandAndTags = messageWithoutCommandAndTags.replace(firstUrl, '').trim();
+        }
+
+        tags.forEach(tag => {
+            messageWithoutCommandAndTags = messageWithoutCommandAndTags.replace(tag, '').trim(); // Remove each tag
+        });
+
+        const formattedTags = tags.map(tag => ({ name: tag.replace('#', '') }));
+        const title = messageWithoutCommandAndTags;
+        const description = firstUrl;
+
+        const response = await notion.pages.create({
+            "icon": {
+                "type": "emoji",
+                "emoji": "📖"
+            },
+            "parent": {
+                "type": "database_id",
+                "database_id": "63536f729a554d1d85bae187a414a138"
+            },
+            "properties": {
+                "Name": {
+                    "title": [
+                        {
+                            "text": {
+                                "content": title
+                            }
+                        }
+                    ]
+                },
+
+                "URL": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": description,
+                                "link": {
+                                    "url": firstUrl
+                                }
+                            }
+                        }
+                    ]
+                },
+                "Tags": {
+                    "multi_select": formattedTags
+                }
+            },
+            "children": [
+
+                {
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": "Click here for more information.",
+                                    "link": {
+                                        "url": firstUrl
+                                    }
+                                }
+                            }
+                        ],
+                        "color": "default"
+                    }
+                }
+            ]
+        });
+
+        console.log(response);
+        // Assuming `message.reply` is how you send a reply, make sure this method exists in your context
+        await message.reply(`✅ Your message is now on Notion! Check it out here: ${response.url}`);
+
     }
+
+
 })
+
+
 

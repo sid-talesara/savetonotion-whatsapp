@@ -39,7 +39,7 @@ client.on('ready', () => {
 });
 
 client.on('message_create', async (message) => {
-    const msgBody = message.body.trim().toLowerCase;
+    const msgBody = message.body.trim().toLowerCase();
     const tagRegex = /#\w+/g;
     const tags = msgBody.match(tagRegex) || [];
 

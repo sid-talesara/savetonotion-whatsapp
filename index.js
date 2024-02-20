@@ -1,9 +1,18 @@
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
-
+const express = require("express")
 const { Client: NotionClient } = require('@notionhq/client');
 const notion = new NotionClient({ auth: "secret_QUV1ux9p59RFOI3MO7jDPF2Wh8EE3DlmjB9t3D2p936" });
 
+const app = express()
+
+app.get("/", (req, res) => {
+    res.status(200).json({ success: true, message: "Save-to-notion running" })
+})
+
+app.listen(3000, () => {
+    console.log("listening to port 3000")
+})
 
 const qrcode = require('qrcode-terminal');
 
@@ -20,6 +29,7 @@ client.on('loading_screen', (percent, message) => {
 
 
 client.on('qr', (qr) => {
+    console.log("QR Generated", qr)
     qrcode.generate(qr, { small: true });
 });
 
@@ -104,10 +114,13 @@ client.on('message_create', async (message) => {
         const urls = messageWithoutCommandAndTags.match(urlRegex) || [];
         const firstUrl = urls.length > 0 ? urls[0] : "";
 
-        if (firstUrl) {
-            messageWithoutCommandAndTags = messageWithoutCommandAndTags.replace(firstUrl, '').trim();
+        if (!firstUrl) {
+            // If firstUrl is empty, reply with an error message or log it
+            console.error("URL is required but not provided.");
+            await message.reply("❌ Error: A URL is required but was not provided.");
+            return; // Exit the function to prevent further execution
         }
-
+        messageWithoutCommandAndTags = messageWithoutCommandAndTags.replace(firstUrl, '').trim();
         tags.forEach(tag => {
             messageWithoutCommandAndTags = messageWithoutCommandAndTags.replace(tag, '').trim(); // Remove each tag
         });

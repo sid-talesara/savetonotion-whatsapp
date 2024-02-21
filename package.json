@@ -7,6 +7,9 @@
     "whatsapp-web.js": "^1.23.0"
   },
   "name": "whatsapp-webjs",
+  "engines": {
+    "node": "18.x"
+  },
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {

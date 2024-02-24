@@ -2,3 +2,5 @@ node_modules
 .wwebjs_cache
 session-my-to-do-list
 IMP
+save-to-notion-key.pem
+.env*
